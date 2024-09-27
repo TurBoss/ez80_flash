@@ -1,7 +1,7 @@
     org 40000h
 
 source:         EQU 50000h
-destination:    EQU 00000h
+destination:    EQU 0h
 length:         EQU 70000h
 ackdone:        EQU 70003h
 
@@ -12,25 +12,25 @@ ackdone:        EQU 70003h
     LD      (ackdone), A
 
     ; open flash for write access
-    LD      A, 0x0B6  ; unlock
-    OUT    (0x0F5), A
+    LD      A, 0xB6  ; unlock
+    OUT0    (0xF5), A
     LD      A, 49h
-    OUT    (0x0F5), A
+    OUT0    (0xF5), A
     LD      A, 0h   ; unprotect all pages
-    OUT    (0x0FA), A
+    OUT0    (0xFA), A
 
-    LD      A, 0x0B6  ; unlock again
-    OUT    (0x0F5), A
+    LD      A, 0xB6  ; unlock again
+    OUT0    (0xF5), A
     LD      A, 49h
-    OUT    (0x0F5), A
-    LD      A, 0x05F  ; Ceiling(18Mhz * 5,1us) = 95, or 0x5F
-    OUT    (0x0F9), A
+    OUT0    (0xF5), A
+    LD      A, 0x5F  ; Ceiling(18Mhz * 5,1us) = 95, or 0x5F
+    OUT0    (0xF9), A
 
     ; mass erase flash
     LD      A, 01h
-    OUT    (0x0FF), A
+    OUT0    (0xFF), A
 erasewait:
-    IN     A, (0x0FF)
+    IN0     A, (0xFF)
     AND     A, 01h
     JR      nz, erasewait
 
@@ -41,12 +41,12 @@ erasewait:
     LDIR
 
     ; protect flash pages 
-    LD      A, 0x0B6  ; unlock
-    OUT    (0x0F5), A
+    LD      A, 0xB6  ; unlock
+    OUT0    (0xF5), A
     LD      A, 49h
-    OUT    (0x0F5), A
-    LD      A, 0x0FF  ; protect all pages
-    OUT    (0x0FA), A
+    OUT0    (0xF5), A
+    LD      A, 0xFF  ; protect all pages
+    OUT0    (0xFA), A
 
     ; set ack variable to done
     LD      A, 1h

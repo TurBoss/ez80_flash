@@ -291,16 +291,14 @@ void CPU::pc(uint32_t value) {
 }
 
 void CPU::instruction_out(uint8_t port_address, uint8_t value) {
-    // ld a, nn
-    uint8_t instructions[4];
-    instructions[0]=value;
-    instructions[1]=0x3e;
-    zdi->write_register(ZDI::ZDI_IS1, 2, instructions);
-    // out0 (nn),a
-    instructions[0]=port_address;
-    instructions[1]=0x39;
-    instructions[2]=0xed;
-    zdi->write_register(ZDI::ZDI_IS2, 3, instructions);
+    // ld a, value
+    zdi->write_register(ZDI::ZDI_IS1, value);
+    zdi->write_register(ZDI::ZDI_IS0, 0x3e);
+
+    // out0 (port_address), a
+    zdi->write_register(ZDI::ZDI_IS2, port_address);
+    zdi->write_register(ZDI::ZDI_IS1, 0x39);
+    zdi->write_register(ZDI::ZDI_IS0, 0xED);
 
 }
 
@@ -311,11 +309,17 @@ void CPU::instruction_di(void) {
 void CPU::reset(void) {
     zdi->write_register(ZDI::ZDI_MASTER_CTL, 0x80);
 
+    Serial.println("WTM : Wait for the command to complete");
     // WTM : Wait for the command to complete
-    delayMicroseconds(200);
-    while  ((zdi->read_register(ZDI::ZDI_MASTER_CTL) & 0x80) > 0)
+    delayMicroseconds(100);
+
+    uint8_t resp = 0;
+
+    while (resp != 0x80)
     {
-        delayMicroseconds(200);
+    	resp = zdi->read_register(ZDI::ZDI_MASTER_CTL) & 0x80;
+        delay(100);
+        Serial.print(".");
     };
 }
 void CPU::exx(void) {
