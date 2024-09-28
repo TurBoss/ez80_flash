@@ -9,6 +9,11 @@
 #include "SPIFFS.h"
 #include <CRC32.h>
 
+
+#include <ArduinoOTA.h>
+#include <WiFiManager.h>
+
+
 #define PAGESIZE            2048
 #define USERLOAD            0x40000
 #define BREAKPOINT          0x40020
@@ -28,6 +33,7 @@
 #define ZDI_TDIPIN			2
 
 #define RGB_LED				21
+#define USE_LITTLEFS		true
 
 int ledpins[] = {3, 4, 5};
 int ledpins_onstate[] = {0, 0, 0};
@@ -37,6 +43,8 @@ bool cpuOnline = false;
 bool needMenu = true;
 
 String inputText;
+
+
 
 CPU*                    cpu;
 ZDI*                    zdi;
@@ -61,8 +69,8 @@ void init_ez80(void);
 void ZDI_upload(uint32_t address, uint8_t *buffer, uint32_t size, bool report);
 uint32_t ZDI_upload(uint32_t address, const char *name, bool report);
 uint32_t getZDImemoryCRC(uint32_t address, uint32_t size);
-void flash_ram(const char *filename);
 
+void flash_ram(const char *filename);
 void flash_rom(const char *filename);
 
 void printSerialMenu(void);
@@ -83,6 +91,58 @@ void setup() {
 
     // Serial
     Serial.begin(115200);
+
+    WiFiManager wm;
+
+    bool res;
+	// res = wm.autoConnect(); // auto generated AP name from chipid
+	// res = wm.autoConnect("AutoConnectAP"); // anonymous ap
+	res = wm.autoConnect("AutoConnectAP","password"); // password protected ap
+
+	if(!res) {
+		Serial.println("Failed to connect");
+		// ESP.restart();
+	}
+	else {
+		//if you get here you have connected to the WiFi
+		Serial.println("connected...yeey :)");
+	}
+    // End Webserver
+
+	 ArduinoOTA
+	    .onStart([]() {
+	      String type;
+	      if (ArduinoOTA.getCommand() == U_FLASH) {
+	        type = "sketch";
+	      } else {  // U_SPIFFS
+	        type = "filesystem";
+	      }
+
+	      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+	      Serial.println("Start updating " + type);
+	    })
+	    .onEnd([]() {
+	      Serial.println("\nEnd");
+	    })
+	    .onProgress([](unsigned int progress, unsigned int total) {
+	      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+	    })
+	    .onError([](ota_error_t error) {
+	      Serial.printf("Error[%u]: ", error);
+	      if (error == OTA_AUTH_ERROR) {
+	        Serial.println("Auth Failed");
+	      } else if (error == OTA_BEGIN_ERROR) {
+	        Serial.println("Begin Failed");
+	      } else if (error == OTA_CONNECT_ERROR) {
+	        Serial.println("Connect Failed");
+	      } else if (error == OTA_RECEIVE_ERROR) {
+	        Serial.println("Receive Failed");
+	      } else if (error == OTA_END_ERROR) {
+	        Serial.println("End Failed");
+	      }
+	    });
+
+	  ArduinoOTA.begin();
 
     inputText.reserve(32);
 
@@ -166,8 +226,8 @@ void loop() {
 			}
 			if (bin_file){
 				Serial.println("OK!");
-				flash_rom(selectedFile);
-				// flash_ram(selecteFile);
+				// flash_rom(selectedFile);
+				flash_ram(selectedFile);
 			}
 			else{
 		        ledsFlash(0xff, 0x00, 0x00);
@@ -178,6 +238,7 @@ void loop() {
 	        needMenu = true;
 		}
 	}
+	ArduinoOTA.handle();
 }
 
 void setupLedPins(void) {
@@ -250,29 +311,29 @@ uint32_t getfileCRC(const char *name) {
 
 void init_ez80(void) {
 
-	Serial.println("SET Break");
+	// Serial.println("SET Break");
     cpu->setBreak();
 
-	Serial.println("reset");
+	// Serial.println("reset");
     cpu->reset();
 
 
-	Serial.println("SET Break");
+	// Serial.println("SET Break");
     cpu->setBreak();
 
-    Serial.println("Set ADL MODE");
+    // Serial.println("Set ADL MODE");
     // Set ADL MODE
     cpu->setADLmode(true);
 
-    Serial.println("Disable interrupts");
+    // Serial.println("Disable interrupts");
     // Disable interrupts
     cpu->instruction_di();  
 
-    Serial.println("configure SPI");
+    // Serial.println("configure SPI");
     // configure SPI
     cpu->instruction_out (SPI_CTL, 0x04);
 
-    Serial.println("configure default GPIO");
+    // Serial.println("configure default GPIO");
     // configure default GPIO
     cpu->instruction_out (PB_DDR, 0xff);
     cpu->instruction_out (PC_DDR, 0xff);
@@ -302,16 +363,16 @@ void init_ez80(void) {
 
     cpu->instruction_out (RTC_CTRL, 0x0);
 
-    Serial.println("configure internal flash");
+    // Serial.println("configure internal flash");
     // configure internal flash
     cpu->instruction_out (FLASH_ADDR_U,0x00);
     cpu->instruction_out (FLASH_CTRL,0b00101000);   // flash enabled, 1 wait state
     
     // configure internal RAM chip-select range
-    Serial.println("configure internal RAM chip-select range");
+    // Serial.println("configure internal RAM chip-select range");
     cpu->instruction_out (RAM_ADDR_U,0xb7);         // configure internal RAM chip-select range
     cpu->instruction_out (RAM_CTL,0b10000000);      // enable
-    Serial.println("configure external RAM chip-select range");
+    //Serial.println("configure external RAM chip-select range");
     // configure external RAM chip-select range
     cpu->instruction_out (CS0_LBR,0x04);            // lower boundary
     cpu->instruction_out (CS0_UBR,0x0b);            // upper boundary
@@ -320,18 +381,18 @@ void init_ez80(void) {
 
     // configure external RAM chip-select range
     cpu->instruction_out (CS1_CTL,0x00);            // memory chip select, cs1 disabled
-    Serial.println("configure external RAM chip-select range");
+    //Serial.println("configure external RAM chip-select range");
     // configure external RAM chip-select range
     cpu->instruction_out (CS2_CTL,0x00);            // memory chip select, cs2 disabled
-    Serial.println("configure external RAM chip-select range");
+    //Serial.println("configure external RAM chip-select range");
     // configure external RAM chip-select range
     cpu->instruction_out (CS3_CTL,0x00);            // memory chip select, cs3 disabled
 
-    Serial.println("set stack pointer");
+    //Serial.println("set stack pointer");
     // set stack pointer
     cpu->sp(0x0BFFFF);
 
-    Serial.println("set program counter");
+    //Serial.println("set program counter");
     // set program counter
     cpu->pc(0x000000);
 }
@@ -434,27 +495,26 @@ uint32_t getZDImemoryCRC(uint32_t address, uint32_t size) {
 
 void flash_ram(const char *filename) {
 
-    char filepath[64] = "/spiffs/\0";
+    char filepath[256];
 
-    strcpy(filepath, filename);
-
-    int i = 0;
-
+    uint32_t i;
     uint32_t size;
     uint32_t read_moscrc;
     uint32_t expected_moscrc;
 
-
-    init_ez80();
-
     // Upload the MOS payload to ZDI memory first
-    Serial.printf("\r\nUploading %s ...\r\n\0", filepath);
+    Serial.printf("\r\nUploading %s ...\r\n\0", filename);
 
-	Serial.println("1 checking file CRC32...");
+    snprintf(filepath, sizeof(filepath), "/spiffs/%s\0", filename);
 
 	expected_moscrc = getfileCRC(filepath);
 
-	Serial.println(expected_moscrc);
+    Serial.println("Init CPU.");
+
+    init_ez80();
+
+    Serial.println("ez80 initialized!");
+    // delay(1000);
 
     size = ZDI_upload(USERLOAD, filepath, true);
 
@@ -510,10 +570,16 @@ void flash_ram(const char *filename) {
 //    }
 //    Serial.println("done.");
 
-    // Final check
-    cpu->setBreak();
+    cpu->pc(USERLOAD);
+    cpu->setContinue();
 
-    delay(100);
+    // Final check
+//    cpu->setBreak();
+//
+//    delay(100);
+//
+//    cpu->pc(0x000000);
+
 
 
 //    read_moscrc == getZDImemoryCRC(0, size);
@@ -533,7 +599,7 @@ void flash_ram(const char *filename) {
 //        return;
 //    }
 
-    cpu->reset();
+    // cpu->reset();
 
 }
 

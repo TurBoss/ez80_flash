@@ -321,6 +321,7 @@ void CPU::reset(void) {
         delay(100);
         Serial.print(".");
     };
+    Serial.println(".");
 }
 void CPU::exx(void) {
     zdi->write_register(ZDI::ZDI_RW_CTL, ZDI::exx);
