@@ -14,6 +14,10 @@
 #include <WiFiManager.h>
 
 
+
+#define FLASH_EPROM			0  // 0 RAM 1 ROM
+
+
 #define PAGESIZE            2048
 #define USERLOAD            0x40000
 #define BREAKPOINT          0x40020
@@ -226,8 +230,12 @@ void loop() {
 			}
 			if (bin_file){
 				Serial.println("OK!");
-				// flash_rom(selectedFile);
-				flash_ram(selectedFile);
+				if (FLASH_EPROM){
+					flash_rom(selectedFile);
+				}
+				else {
+					flash_ram(selectedFile);
+				}
 			}
 			else{
 		        ledsFlash(0xff, 0x00, 0x00);
