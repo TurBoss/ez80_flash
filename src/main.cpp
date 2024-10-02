@@ -15,8 +15,6 @@
 
 
 
-#define FLASH_EPROM			0  // 0 RAM 1 ROM
-
 
 #define PAGESIZE            2048
 #define USERLOAD            0x40000
@@ -31,7 +29,7 @@
 
 #define WAITHOLDBUTTONMS    2000
 #define WAITRESETMS         10000
-#define WAITPROGRAMSECS     10
+#define WAITPROGRAMSECS     16
 
 #define ZDI_TCKPIN			1
 #define ZDI_TDIPIN			2
@@ -39,12 +37,17 @@
 #define RGB_LED				21
 #define USE_LITTLEFS		true
 
+
+int bin_dest = 0;
+int menu_page = 0;
 int ledpins[] = {3, 4, 5};
 int ledpins_onstate[] = {0, 0, 0};
 
 bool textComplete = false;
 bool cpuOnline = false;
 bool needMenu = true;
+
+
 
 String inputText;
 
@@ -77,8 +80,10 @@ uint32_t getZDImemoryCRC(uint32_t address, uint32_t size);
 void flash_ram(const char *filename);
 void flash_rom(const char *filename);
 
-void printSerialMenu(void);
-void printMenus(void);
+void printMenus(uint8_t menu);
+
+void printDestMenu(void);
+void printFileMenu(void);
 
 void zdiStatus(void);
 
@@ -166,9 +171,14 @@ void setup() {
     }
 
     neopixelWrite(RGB_LED, 0x00, 0x00, 0xff);
+
+    Serial.println("####################");
+    Serial.println("ez80 Flash tool v1.0");
+    Serial.println("####################");
 }
 
 void loop() {
+
 
 	zdiStatus();
 
@@ -176,7 +186,7 @@ void loop() {
 
 
 	    if(needMenu) {
-	        printMenus();
+	    	printMenus(1);
 	        needMenu = false;
 	    }
 
@@ -188,6 +198,7 @@ void loop() {
 			Serial.print(inChar);
 
 			if ((inChar == '\n') or (inChar == '\r')){
+				inputText += '\0';
 				textComplete = true;
 			}
 			else {
@@ -200,53 +211,77 @@ void loop() {
 			textComplete = false;
 			Serial.print("\r\n");
 
-			// Serial.print(inputText);
+			Serial.println(inputText);
 
-			if(!SPIFFS.begin(true)){
-				Serial.println("An Error has occurred while mounting SPIFFS");
-				while(1) ledsFlash(0xff, 0x00, 0x00);
-			}
-
-			File root = SPIFFS.open("/");
-
-			File bin_file = root.openNextFile();
-
-			int i = 1;
-			const char *selectedFile;
-			const char *listedFile;
-
-			while(bin_file){
-				listedFile = bin_file.name();
-				if (strcmp(listedFile, "flash.bin")) {
-					if ((i == inputText.toInt()) or  (inputText == listedFile)) {
-						selectedFile = listedFile;
-						Serial.printf("%d %s\r\n\0", i, selectedFile);
-
-						break;
-					}
-					i ++;
+			if (menu_page == 1){
+				if ((inputText.toInt() == 1) or (inputText == "ram") or (inputText == "RAM")) {
+					bin_dest = 1;
+					menu_page = 2;
 				}
-				bin_file = root.openNextFile();
-			}
-			if (bin_file){
-				Serial.println("OK!");
-
-				if (FLASH_EPROM){
-					Serial.println("ROM");
-					flash_rom(selectedFile);
+				else if ((inputText.toInt() == 2) or (inputText == "rom") or (inputText == "ROM")) {
+					bin_dest = 2;
+					menu_page = 2;
 				}
 				else {
-					Serial.println("RAM");
-					flash_ram(selectedFile);
+					Serial.println("not an option");
+				}
+				printMenus(menu_page);
+			}
+			else if (menu_page == 2){
+
+				if (inputText.toInt() == 0){
+					menu_page = 1 ;
+					printMenus(menu_page);
+				}
+				else {
+
+					if(!SPIFFS.begin(true)){
+						Serial.println("An Error has occurred while mounting SPIFFS");
+						while(1) ledsFlash(0xff, 0x00, 0x00);
+					}
+
+					File root = SPIFFS.open("/");
+
+					File bin_file = root.openNextFile();
+
+					int i = 1;
+					const char *selectedFile;
+					const char *listedFile;
+
+					while(bin_file){
+						listedFile = bin_file.name();
+						if (strcmp(listedFile, "flash.bin")) {
+							if ((i == inputText.toInt()) or  (inputText == listedFile)) {
+								selectedFile = listedFile;
+								Serial.printf("%d %s\r\n\0", i, selectedFile);
+
+								break;
+							}
+							i ++;
+						}
+						bin_file = root.openNextFile();
+					}
+					if (bin_file){
+						Serial.print("Destination = ");
+
+						if (bin_dest == 1){
+							Serial.println("RAM");
+							flash_ram(selectedFile);
+						}
+						else if (bin_dest == 2) {
+							Serial.println("ROM");
+							flash_rom(selectedFile);
+						}
+					}
+					else{
+						ledsFlash(0xff, 0x00, 0x00);
+						Serial.println("no file.");
+					}
+					inputText = "";
+					needMenu = true;
 				}
 			}
-			else{
-		        ledsFlash(0xff, 0x00, 0x00);
-				Serial.println("no file.");
-			}
-
 			inputText = "";
-	        needMenu = true;
 		}
 	}
 	ArduinoOTA.handle();
@@ -720,21 +755,28 @@ void flash_rom(const char *filename) {
 
 }
 
-void printSerialMenu(void) {
+void printFileMenu(void) {
+	menu_page = 2;
 
-	Serial.printf("\r\n\r\n#################################\r\n\0");
+	Serial.printf("\r\n#################################\r\n\0");
 	Serial.printf(zdi_msg_up, zdi->get_productid(), zdi->get_revision());
 	Serial.printf("#################################\r\n\0");
+
 
 	File root = SPIFFS.open("/");
 
 	File bin_file = root.openNextFile();
 
-	delay(1000);
+	delay(100);
 
-	Serial.println("Input number or file to flash:");
+	if (bin_dest == 1){
+		Serial.println("Input number or file to flash on RAM:");
+	}
+	if (bin_dest == 2){
+		Serial.println("Input number or file to flash on ROM:");
+	}
 
-	Serial.println("");
+	Serial.print("\r\n");
 
 	int i = 1;
 	while(bin_file){
@@ -745,14 +787,33 @@ void printSerialMenu(void) {
 		bin_file = root.openNextFile();
 	}
 
+	Serial.println("\t0 - back");
+
+	Serial.println("");
+	Serial.print("> ");
+
+}
+void printDestMenu(void) {
+	menu_page = 1;
+	Serial.println("Upload bin to:");
+	Serial.println("\t1 - RAM 0x40000");
+	Serial.println("\t2 - ROM 0x00000");
 	Serial.println("");
 	Serial.print("> ");
 
 }
 
+void printMenus(uint8_t menu) {
 
-void printMenus(void) {
-    printSerialMenu();
+	if (menu == 1){
+	    printDestMenu();
+	    menu_page = 1;
+	}
+	else if (menu == 2) {
+		printFileMenu();
+	    menu_page = 2;
+	}
+
 }
 
 void zdiStatus(void) {
@@ -768,7 +829,7 @@ void zdiStatus(void) {
     }
     if(needMenu) {
         needMenu = false;
-    	printSerialMenu();
+        printMenus(1);
     }
 
     cpuOnline = true;

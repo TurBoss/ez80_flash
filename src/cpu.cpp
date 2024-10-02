@@ -309,7 +309,7 @@ void CPU::instruction_di(void) {
 void CPU::reset(void) {
     zdi->write_register(ZDI::ZDI_MASTER_CTL, 0x80);
 
-    Serial.println("WTM : Wait for the command to complete");
+    // Serial.println("WTM : Wait for the command to complete");
     // WTM : Wait for the command to complete
     delayMicroseconds(100);
 
