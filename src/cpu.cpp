@@ -315,12 +315,15 @@ void CPU::reset(void) {
 
     uint8_t resp = 0;
 
-    while (resp != 0x80)
+	// resp = zdi->read_register(ZDI::ZDI_MASTER_CTL);
+
+    while (resp  & 0x80)
     {
     	resp = zdi->read_register(ZDI::ZDI_MASTER_CTL) & 0x80;
         delay(100);
         Serial.print(".");
     };
+
     Serial.println(".");
 }
 void CPU::exx(void) {

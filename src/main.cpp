@@ -31,7 +31,7 @@
 
 #define WAITHOLDBUTTONMS    2000
 #define WAITRESETMS         10000
-#define WAITPROGRAMSECS     20
+#define WAITPROGRAMSECS     10
 
 #define ZDI_TCKPIN			1
 #define ZDI_TDIPIN			2
@@ -65,13 +65,13 @@ void ledsFlash(int red, int green, int blue);
 void ledsErrorFlash();
 void ledsWaitFlash(int32_t ms);
 
-uint32_t getfileCRC(const char *name);
-uint32_t getZDImemoryCRC(uint32_t address, uint32_t size);
 
 void init_ez80(void);
 
 void ZDI_upload(uint32_t address, uint8_t *buffer, uint32_t size, bool report);
 uint32_t ZDI_upload(uint32_t address, const char *name, bool report);
+
+uint32_t getfileCRC(const char *name);
 uint32_t getZDImemoryCRC(uint32_t address, uint32_t size);
 
 void flash_ram(const char *filename);
@@ -230,10 +230,13 @@ void loop() {
 			}
 			if (bin_file){
 				Serial.println("OK!");
+
 				if (FLASH_EPROM){
+					Serial.println("ROM");
 					flash_rom(selectedFile);
 				}
 				else {
+					Serial.println("RAM");
 					flash_ram(selectedFile);
 				}
 			}
