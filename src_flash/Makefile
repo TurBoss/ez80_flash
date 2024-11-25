@@ -14,7 +14,7 @@ ASSEMBLER = z88dk-z80asm
 ASFLAGS = -mez80 -b -Iinclude
 
 # Default target
-all: $(OUTPUT) # upload
+all: $(OUTPUT)
 
 # Rule to assemble the source file
 $(OUTPUT): $(SRC)

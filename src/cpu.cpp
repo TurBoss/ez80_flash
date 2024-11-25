@@ -307,24 +307,27 @@ void CPU::instruction_di(void) {
 }
 
 void CPU::reset(void) {
+
     zdi->write_register(ZDI::ZDI_MASTER_CTL, 0x80);
 
     // Serial.println("WTM : Wait for the command to complete");
+
     // WTM : Wait for the command to complete
+
     delayMicroseconds(100);
 
     uint8_t resp = 0;
 
-	// resp = zdi->read_register(ZDI::ZDI_MASTER_CTL);
+	resp = zdi->read_register(ZDI::ZDI_MASTER_CTL);
 
-    while (resp  & 0x80)
+    while (resp & 0x80)
     {
     	resp = zdi->read_register(ZDI::ZDI_MASTER_CTL) & 0x80;
-        delay(100);
-        Serial.print(".");
+        delay(10);
+        // Serial.print("-");
     };
 
-    Serial.println(".");
+    // Serial.println(".");
 }
 void CPU::exx(void) {
     zdi->write_register(ZDI::ZDI_RW_CTL, ZDI::exx);
