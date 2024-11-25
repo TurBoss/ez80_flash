@@ -44,7 +44,7 @@ bool needMenu = true;
 
 
 AsyncWebServer *server;               // initialise webserver
-//String inputText;
+String inputText;
 
 
 
@@ -178,127 +178,132 @@ void setup() {
 	Serial.println("# ez80 Flash Utility v0.0.1 #");
 	Serial.println("#############################");
 }
-
+unsigned long previousMillis = 0;
+const long interval = 3000;
 void loop() {
 
-// 	cpuOnline = zdiStatus();
+	unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+    	previousMillis = currentMillis;
+    	cpuOnline = zdiStatus();
+    }
 
-//	if (cpuOnline){
-//		if (needMenu) {
-//			printMenus(1);
-//			needMenu = false;
-//		}
-//
-//
-//		while (Serial.available()) {
-//
-//			char inChar = (char)Serial.read();
-//
-//			Serial.print(inChar);
-//
-//			if ((inChar == '\n') or (inChar == '\r')){
-//				inputText += '\0';
-//				textComplete = true;
-//			}
-//			else {
-//				inputText += inChar;
-//			}
-//		}
-//
-//		if (textComplete) {
-//
-//			textComplete = false;
-//			Serial.print("\r\n");
-//
-//			Serial.println(inputText);
-//
-//			if (menu_page == 1){
-//				if ((inputText.toInt() == 1) or (inputText == "ram") or (inputText == "RAM")) {
-//					bin_dest = 1;
-//					menu_page = 2;
-//				}
-//				else if ((inputText.toInt() == 2) or (inputText == "rom") or (inputText == "ROM")) {
-//					bin_dest = 2;
-//					menu_page = 2;
-//				}
-//				else {
-//					Serial.println("not an option");
-//				}
-//				printMenus(menu_page);
-//			}
-//			else if (menu_page == 2){
-//
-//				if (inputText.toInt() == 0){
-//					menu_page = 1 ;
-//					printMenus(menu_page);
-//				}
-//				else {
-//
-//					if(!SPIFFS.begin(true)){
-//						Serial.println("An Error has occurred while mounting SPIFFS");
-//						while(1) ledsFlash(0xff, 0x00, 0x00);
-//					}
-//
-//					File root = SPIFFS.open("/");
-//
-//					File bin_file = root.openNextFile();
-//
-//					int i = 1;
-//					const char *selectedFile;
-//					const char *listedFile;
-//
-//					while(bin_file){
-//						listedFile = bin_file.name();
-//						if (strcmp(listedFile, "flash.bin")) {
-//							if ((i == inputText.toInt()) or  (inputText == listedFile)) {
-//								selectedFile = listedFile;
-//								Serial.printf("%d %s\r\n\0", i, selectedFile);
-//
-//								break;
-//							}
-//							i ++;
-//						}
-//						bin_file = root.openNextFile();
-//					}
-//					if (bin_file){
-//						Serial.print("Destination = ");
-//
-//						if (bin_dest == 1){
-//							Serial.println("RAM");
-//							flash_ram(selectedFile);
-//						}
-//						else if (bin_dest == 2) {
-//							Serial.println("ROM");
-//							flash_rom(selectedFile);
-//						}
-//					}
-//					else{
-//						ledsFlash(0xff, 0x00, 0x00);
-//						Serial.println("no file.");
-//					}
-//					inputText = "";
-//					needMenu = true;
-//				}
-//			}
-//			inputText = "";
-//		}
-//	}
-//	else {
-//		if(needMenu) {
-//			printMenus(1);
-//			needMenu = false;
-//		}
-//
-//
-//		// reboot if we've told it to reboot
-//		//	if (EspReboot) {
-//		//		rebootESP("Web Admin Initiated Reboot");
-//		//	}
-//
-//	}
+	if (cpuOnline){
+		if (needMenu) {
+			printMenus(1);
+			needMenu = false;
+		}
 
 
-// 	ArduinoOTA.handle();
+		while (Serial.available()) {
+
+			char inChar = (char)Serial.read();
+
+			Serial.print(inChar);
+
+			if ((inChar == '\n') or (inChar == '\r')){
+				inputText += '\0';
+				textComplete = true;
+			}
+			else {
+				inputText += inChar;
+			}
+		}
+
+		if (textComplete) {
+
+			textComplete = false;
+			Serial.print("\r\n");
+
+			Serial.println(inputText);
+
+			if (menu_page == 1){
+				if ((inputText.toInt() == 1) or (inputText == "ram") or (inputText == "RAM")) {
+					bin_dest = 1;
+					menu_page = 2;
+				}
+				else if ((inputText.toInt() == 2) or (inputText == "rom") or (inputText == "ROM")) {
+					bin_dest = 2;
+					menu_page = 2;
+				}
+				else {
+					Serial.println("not an option");
+				}
+				printMenus(menu_page);
+			}
+			else if (menu_page == 2){
+
+				if (inputText.toInt() == 0){
+					menu_page = 1 ;
+					printMenus(menu_page);
+				}
+				else {
+
+					if(!SPIFFS.begin(true)){
+						Serial.println("An Error has occurred while mounting SPIFFS");
+						// while(1) ledsFlash(0xff, 0x00, 0x00);
+					}
+
+					File root = SPIFFS.open("/");
+
+					File bin_file = root.openNextFile();
+
+					int i = 1;
+					const char *selectedFile;
+					const char *listedFile;
+
+					while(bin_file){
+						listedFile = bin_file.name();
+						if (strcmp(listedFile, "flash.bin")) {
+							if ((i == inputText.toInt()) or  (inputText == listedFile)) {
+								selectedFile = listedFile;
+								Serial.printf("%d %s\r\n\0", i, selectedFile);
+
+								break;
+							}
+							i ++;
+						}
+						bin_file = root.openNextFile();
+					}
+					if (bin_file){
+						Serial.print("Destination = ");
+
+						if (bin_dest == 1){
+							Serial.println("RAM");
+							flash_ram(selectedFile);
+						}
+						else if (bin_dest == 2) {
+							Serial.println("ROM");
+							flash_rom(selectedFile);
+						}
+					}
+					else{
+						// ledsFlash(0xff, 0x00, 0x00);
+						Serial.println("no file.");
+					}
+					inputText = "";
+					needMenu = true;
+				}
+			}
+			inputText = "";
+		}
+	}
+	else {
+		if(needMenu) {
+			printMenus(1);
+			needMenu = false;
+		}
+
+
+		// reboot if we've told it to reboot
+		//	if (EspReboot) {
+		//		rebootESP("Web Admin Initiated Reboot");
+		//	}
+
+	}
+
+
+ 	ArduinoOTA.handle();
 
 }
 void setupLedPins(void) {

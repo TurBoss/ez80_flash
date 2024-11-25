@@ -151,7 +151,7 @@ function downloadDeleteButton(filename, action) {
 
 function flashFile(filename, area) {
 
-  var urltocall = "/flash_file?name=/" + filename + "&area=" + area;
+  var urltocall = "/flash_file?name=" + filename + "&area=" + area;
 
   xmlhttp=new XMLHttpRequest();
 

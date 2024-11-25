@@ -251,7 +251,7 @@ void flash_ram(const char *filename) {
 	// Upload the MOS payload to ZDI memory first
 	Serial.printf("\r\nUploading %s ...\r\n\0", filename);
 
-	snprintf(filepath, sizeof(filepath), "/spiffs%s\0", filename);
+	snprintf(filepath, sizeof(filepath), "/spiffs/%s\0", filename);
 
 	expected_moscrc = getfileCRC(filepath);
 
@@ -362,10 +362,10 @@ void flash_rom(const char *filename) {
 	// Upload the MOS payload to ZDI memory first
 	Serial.printf("\r\nUploading %s ...\r\n\0", filename);
 
-	snprintf(filepath, sizeof(filepath), "/spiffs%s\0", filename);
+	snprintf(filepath, sizeof(filepath), "/spiffs/%s\0", filename);
 
-//	Serial.println(filename);
-//	Serial.println(filepath);
+	Serial.println(filename);
+	Serial.println(filepath);
 
 	expected_moscrc = getfileCRC(filepath);
 
