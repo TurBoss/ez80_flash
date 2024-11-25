@@ -90,6 +90,10 @@ const char index_html[] PROGMEM = R"rawliteral(
     <button onclick="logoutButton()">Logout</button>
   </div>
 
+  <div class="box">
+    <p>https://github.com/TurBoss/ez80_flash/</p>
+  </div>
+
 
 <script>
 
