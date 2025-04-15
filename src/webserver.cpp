@@ -62,7 +62,7 @@ void configureWebServer(AsyncWebServer *server) {
 	server->on("/logged-out", HTTP_GET, [](AsyncWebServerRequest * request) {
 		String logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url();
 		// Serial.println(logmessage);
-		request->send_P(401, "text/html", logout_html, processor);
+		request->send(401, "text/html", logout_html, processor);
 	});
 
 	server->on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
@@ -71,7 +71,7 @@ void configureWebServer(AsyncWebServer *server) {
 		if (checkUserWebAuth(request)) {
 			logmessage += " Auth: Success";
 			// Serial.println(logmessage);
-			request->send_P(200, "text/html", index_html, processor);
+			request->send(200, "text/html", index_html, processor);
 		} else {
 			logmessage += " Auth: Failed";
 			// Serial.println(logmessage);

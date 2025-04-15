@@ -53,8 +53,8 @@ char zdi_msg_down[] = "ZDI down - check cabling\r\n\0";
 
 int porthttp = 80;
 
-String ssid = "TP-LINK";
-String wifipassword = "pladur13lol";
+String ssid = "SSID";
+String wifipassword = "PSK";
 
 void setupLedPins(void);
 void ledsOff(void);
